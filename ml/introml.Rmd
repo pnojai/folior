@@ -1,0 +1,159 @@
+---
+title: "IntroML"
+author: "Jai Jeffryes"
+date: "12/9/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(caret)
+```
+
+# Dependencies
+You'll need the `ellipse` package for plotting ellipses in `featurePlot()`.
+
+# Introduction
+A getting-acquainted, *Hello, World* machine learning project employing the `iris` data set.
+
+References:
+
+1. [Your First Machine Learning Project in R Step-By-Step](https://machinelearningmastery.com/machine-learning-in-r-step-by-step/).
+1. [How to Use a Machine Learning Checklist to Get Accurate Predictions, Reliably](https://machinelearningmastery.com/machine-learning-checklist/).
+1. [The Process](http://machinelearningmastery.com/process-for-working-through-machine-learning-problems/).
+1. [What is Data Mining and KDD?](http://machinelearningmastery.com/what-is-data-mining-and-kdd/).
+1. [The `caret` Package](https://topepo.github.io/caret/). Home page by Max Kuhn.
+
+- Define Problem.
+- Prepare Data.
+- Evaluate Algorithms.
+- Improve Results.
+- Present Results.
+
+# Description
+Summarization of iris data.
+
+- Numeric data.
+- Classification. Unsupervised.
+- Multi-class or multi-nominal.
+
+Since we have class data, we observe that this data set is **labelled**.
+
+## `caret`
+The caret package provides a consistent interface into hundreds of machine learning algorithms and provides useful convenience methods for data visualization, data resampling, model tuning and model comparison, among other features. It’s a must have tool for machine learning projects in R.
+
+# Load data
+Use a generic name for the dataset so you can copy and paste code later.
+```{r}
+data(iris)
+dataset <- iris
+rm(iris)
+gc()
+```
+
+## Create validation dataset
+```{r}
+# Create a list of 80% of the rows in the original dataset we can
+# use for training.
+training_index <- createDataPartition(dataset$Species, p=0.80, list=FALSE)
+# Select 20% of the data for validation.
+validation <- dataset[-training_index,]
+# Use the remaining 80% of data to training and testing the models
+dataset <- dataset[training_index,]
+```
+
+# Summarize
+- Dimensions of the dataset.
+- Types of the attributes.
+- Peek at the data itself.
+- Levels of the class attribute.
+- Breakdown of the instances in each class.
+- Statistical summary of all attributes.
+
+```{r}
+# dimensions of dataset
+dim(dataset)
+
+# list types for each attribute
+sapply(dataset, class)
+
+str(dataset)
+
+# take a peek at the first 5 rows of the data
+head(dataset)
+
+# list the levels for the class
+levels(dataset$Species)
+
+# summarize the class distribution
+percentage <- prop.table(table(dataset$Species)) * 100
+cbind(freq=table(dataset$Species), percentage=percentage)
+
+# summarize attribute distributions
+summary(dataset)
+```
+
+# Visualize
+We are going to look at two types of plots:
+
+1. Univariate plots to better understand each attribute.
+1. Multivariate plots to better understand the relationships between attributes.
+
+## Univariate
+It is helpful with visualization to have a way to refer to just the input attributes and just the output attributes. Let’s set that up and call the inputs attributes x and the output attribute (or class) y.
+
+```{r}
+# split input and output
+x <- dataset[,1:4]
+y <- dataset[,5]
+```
+
+Given that the input variables are numeric, we can create box and whisker plots of each.
+
+```{r}
+# boxplot for each attribute on one image
+par(mfrow=c(1,4))
+  for(i in 1:4) {
+  boxplot(x[,i], main=names(iris)[i])
+}
+```
+
+We can also create a barplot of the Species class variable to get a graphical representation of the class distribution (generally uninteresting in this case because they’re even).
+
+```{r}
+# barplot for class breakdown
+plot(y)
+```
+
+## Multivariate
+Now we can look at the interactions between the variables.
+
+First let’s look at scatterplots of all pairs of attributes and color the points by class. In addition, because the scatterplots show that points for each class are generally separate, we can draw ellipses around them.
+
+`featurePlot()` comes from `caret` and it is a wrapper for `lattice` plotting of predictor variables.
+
+```{r}
+# scatterplot matrix
+featurePlot(x=x, y=y, plot="ellipse")
+```
+
+We can also look at box and whisker plots of each input variable again, but this time broken down into separate plots for each class. This can help to tease out obvious linear separations between the classes.
+
+This is useful to see that there are clearly different distributions of the attributes for each class value.
+
+```{r}
+# box and whisker plots for each attribute
+featurePlot(x=x, y=y, plot="box")
+```
+
+Next we can get an idea of the distribution of each attribute, again like the box and whisker plots, broken down by class value. Sometimes histograms are good for this, but in this case we will use some probability density plots to give nice smooth lines for each distribution.
+
+```{r}
+# density plots for each attribute by class value
+scales <- list(x=list(relation="free"), y=list(relation="free"))
+featurePlot(x=x, y=y, plot="density", scales=scales)
+```
+
