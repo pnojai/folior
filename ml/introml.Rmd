@@ -17,10 +17,6 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
-library(caret)
-```
-
 # Introduction
 This is a *Hello, World* type of project for getting acquainted with machine learning. It examines the `iris` dataset.
 
@@ -69,6 +65,10 @@ Reference: [How You Should Create A Data Science Portfolio That Will Get You Hir
 
 - `ellipse`. Plotting ellipses in `featurePlot()`.
 - `randomForest`.
+
+```{r message=FALSE}
+library(caret)
+```
 
 # Objectives
 In this project, I examine measures of parts of the iris flower and use those measures to predict its species. The motivation for the analysis is to demonstrate unsupervised classification, in which classes derive from the data and predictor variables map to these classes based on machine learning models. I code a workflow in a design on which I can base other such analyses.
@@ -411,7 +411,7 @@ These are some ideas I would consider if I were to do this project again, or ano
 - [Kappa coefficients](http://john-uebersax.com/stat/kappa.htm).
 
 ### The `caret` package
-- [Journal of Statistical Software](http://www.jstatsoft.org/v28/i05).
+- [Building Predictive Models in R Using the `caret` Package](http://www.jstatsoft.org/v28/i05). Journal of Statistical Software.
 - [Interview with Max Kuhn](http://youtu.be/YmHyAHkjX_A). Developer of `caret`.
 - [Webinar](http://www.youtube.com/watch?v=7Jbb2ItbTC4).
 
