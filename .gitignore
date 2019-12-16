@@ -39,3 +39,5 @@ vignettes/*.pdf
 .Renviron
 
 ml/rsconnect/
+
+ml/.DS_Store
