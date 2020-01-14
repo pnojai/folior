@@ -1,0 +1,213 @@
+---
+title: "ML Template"
+author: "Jai Jeffryes"
+date: "12/29/2019"
+output:
+  html_document:
+    code_download: yes
+    highlight: pygments
+    number_sections: yes
+    theme: flatly
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Template introduction
+Chapter 2 of [An Introduction to Statistical Learning with Applications in R](http://faculty.marshall.usc.edu/gareth-james/ISL/), explores sample advertising data by answering seven questions. This template recapitulates those questions using data about cats from `MASS` R package. Substitute other datasets to reuse the approach and the code.
+
+## References
+- James, G., Witten, D., Hastie, T., and Tibshirani, R. (2013) *An Introduction to Statistical Learning with Applications in R*. New York: Springer.
+- Venables W. N,, Ripley B. D. (2002) *Modern Applied Statistics with S*, Fourth edition. New York: Springer. ISBN 0-387-95457-0, [http://www.stats.ox.ac.uk/pub/MASS4](http://www.stats.ox.ac.uk/pub/MASS4).
+
+# Set up
+## Load libraries
+```{r}
+library(car)   # Variance inflation factor.
+library(MASS)  # Cats dataset.
+```
+
+## Load data
+```{r}
+data(cats)
+# Use a generic name to support code reuse.
+dataset <- cats
+rm(cats)
+gc()
+```
+
+# Seven questions
+## Is there a relationship between predictors and a response
+- Fit a multiple regression model.
+- Test the null hypothesis. $H_0$: Each predictor = 0. Evaluate the p-value of the $F$ statistic.
+
+```{r}
+set.seed(42)
+lm.fit <- lm(Hwt ~ Bwt + Sex, data = dataset)
+lm.summary <- summary(lm.fit)
+lm.summary
+```
+
+- $F$ statistic: `r lm.summary$fstatistic[1]`.
+- P-value: `r pf(lm.summary$fstatistic[1], lm.summary$fstatistic[2], lm.summary$fstatistic[3], lower.tail=FALSE)`.
+
+### Conclusion for null hypothesis
+The $F$-statistic is far from 1 and its p-value is close to 0. We reject the null hypothesis and accept the alternative hypothesis, concluding there is a relationship of statistical significance between the predictors and the response.
+
+## How strong is the relationship
+There are two accuracy measures.
+
+1. Residual standard error (RSE) measures the standard deviation of the response from the population regression line. Comparing RSE to the mean response yields percentage error.
+1. $R^2$ gives you percentage of variability in the response explained by the predictors.
+   
+```{r}
+# RSE
+# lm.summary$sigma
+
+# Mean response
+response_mean <- mean(cats$Hwt)
+
+# Percentage error
+error_percent <- (lm.summary$sigma / response_mean) * 100
+
+# R squared
+# lm.summary$r.squared
+```
+
+- RSE: `r lm.summary$sigma`.
+- Mean response: `r response_mean`.
+- Mean error of prediction: `r error_percent`%.
+- $R^2$: `r lm.summary$r.squared`.
+
+### Conclusion for strength of relationship
+Our predictions differ, on average, from the true value by 1.46 g. on an average heart weight of 10.63 g, indicating an error rate of 14%. The predictors explain 65% of the variance in heart weight.
+
+## Which predictors contribute to the response
+Examine the p-values associated with each predictor's t-statistic.
+   
+### Conclusion for contributing predictors
+- Body weight is related to heart weight.
+- Sex is not.
+
+## How large is the effect of each predictor on the response
+- Examine confidence intervals. Are they narrow and far from zero, or do they include zero, making them statistically insignificant.
+- Evaluate variance inflation factor for evidence of collinearity. A value of 1 indicates none.
+- Run separate simple linear regressions.
+   
+```{r}
+confint(lm.fit)
+vif(lm.fit)
+
+summary(lm(Hwt ~ Bwt, data = dataset))
+summary(lm(Hwt ~ Sex, data = dataset))
+```
+
+### Conclusion for effects
+- The confidence interval for body weight appears narrow and it is far from 0, providing evidence that it is related to heart weight.
+- The confidence interval for sex includes 0, indicating it is statistically insignificant for a given body weight.
+- Variance inflation factors are near 1, so there is no evidence of collinearity to explain the confidence interval for sex.
+- Body weight alone has a strong association. It's p-value is near zero, and its $R^2$ is 0.6466, very close to $R^2$ from the multiple regression model, which is `r lm.summary$r.squared`.
+- Sex alone has statistical significance. The p-value of its $F$ statistic is low, so there is a relationship, and the p-value of the predictor is low, so it has significance when body weight is ignored. However, the effect is weaker. Its $R^2$ indicates that sex alone accounts for only 17% of the variance in heart weight.
+
+## How accurately can we predict future responses
+- Predict the average response. For a certain percentage of datasets, the confidence interval contains the true average of the response. In other words, the value on the regression line.
+- Predict an individual response. For a certain percentage of datasets, the prediction interval contains the true value of the response. It accounts for not only the reducible error, but also the uncertainty surrounding the response for a particular case. In other words, the interval includes the result of the estimated average plus residual or $\epsilon$.
+
+(Should I drop the predictor of sex here?)
+   
+```{r}
+# Produce confidence intervals and prediction intervals for the prediction of medv for a given value of lstat.
+input.predict <- data.frame(Bwt = c(3, 3, 5, 5, 10, 10),
+                            Sex = c("M", "F", "M", "F", "M", "F"))
+
+# Test data.
+input.predict
+
+# Confidence intervals.
+predict(lm.fit, input.predict, interval = "confidence")
+
+# Prediction intervals.
+predict(lm.fit, input.predict, interval = "prediction")
+```
+
+## Is the relationship linear
+Residual plots. Try transformations of predictors to accommodate non-linear relationships.
+
+- Residuals vs. fitted values. In simple regression this is residuals to predictor. We wish to see no pattern.
+- Normal Q-Q.
+- Scale-location.
+- Residuals vs. leverage.
+
+- Try transformations to reduce patterns. $log X$, $\sqrt{X}$, $X^2$, or higher polynomials using `poly()`.
+   
+```{r}
+par.old <- par(no.readonly = TRUE)
+par(mfrow = c(2,2))
+plot(lm.fit)
+par(par.old)
+
+plot(predict(lm.fit), residuals(lm.fit))
+plot(predict(lm.fit), rstudent(lm.fit))
+
+# Compute leverage statistics.
+plot(hatvalues (lm.fit))
+which.max(hatvalues (lm.fit))
+```
+
+### Conclusions for linearity
+
+### Transformations
+Though the template doesn't need them, include the code for use later.
+
+I want to show heteroscedacity in a plot.
+
+```{r}
+# Fits for: log, square root, square, and polynomials.
+lm.log.fit <- lm(Hwt ~ . + log(Bwt), data = dataset)
+lm.sqrt.fit <- lm(Hwt ~ . + sqrt(Bwt), data = dataset)
+lm.sq.fit <- lm(Hwt ~ . + I(Bwt^2), data = dataset)
+lm.poly.fit <- lm(Hwt ~ . + poly(Bwt, 5), data = dataset)
+
+# Analysis of variance
+anova(lm.fit, lm.log.fit, lm.sqrt.fit, lm.sq.fit, lm.poly.fit)
+
+# Review summaries and diagnostic plots
+par.old <- par(no.readonly = TRUE)
+par(mfrow = c(2,2))
+
+summary(lm.fit)
+plot(lm.fit)
+
+summary(lm.log.fit)
+plot(lm.log.fit)
+
+summary(lm.sqrt.fit)
+plot(lm.sqrt.fit)
+
+summary(lm.sq.fit)
+plot(lm.sq.fit)
+
+summary(lm.poly.fit)
+plot(lm.poly.fit)
+
+par(par.old)
+```
+
+### Analysis of non-linear transformations
+References:
+
+- [Understanding Diagnostic Plots for Linear Regression Analysis](https://data.library.virginia.edu/diagnostic-plots/).
+- [Understanding Q-Q Plots](https://data.library.virginia.edu/understanding-q-q-plots/).
+
+## Is there synergy among the predictors.
+Regress on interaction terms and evaluate change in $R^2$.
+
+```{r}
+# lm.inter.fit <- lm(Hwt ~ Sex + Bwt + Sex:Bwt, data = dataset)
+lm.inter.fit <- lm(Hwt ~ Sex * Bwt, data = dataset)
+```
+
+### Conclusions for synergy

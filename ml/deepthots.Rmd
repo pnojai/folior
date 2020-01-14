@@ -1,0 +1,36 @@
+---
+title: "Deep Thots"
+author: "Jai Jeffryes"
+date: "12/28/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+- [How to implement Deep Learning in R using Keras and Tensorflow](https://towardsdatascience.com/how-to-implement-deep-learning-in-r-using-keras-and-tensorflow-82d135ae4889).
+- [Cifar10 dataset](https://www.cs.toronto.edu/~kriz/cifar.html).
+- [R interface to Keras](https://keras.rstudio.com).
+- [Tensorflow for R](https://tensorflow.rstudio.com).
+
+```{r eval=FALSE}
+# Installing from GitHub is more convenient than CRAN because the
+# Dev version is smarter about obtaining dependences, like Miniconda.
+devtools::install_github("rstudio/keras")
+library(keras)
+install_keras()
+```
+
+- [RStudio's Getting Started](https://keras.rstudio.com)
+
+```{r}
+library(keras)
+mnist <- dataset_mnist()
+x_train <- mnist$train$x
+y_train <- mnist$train$y
+x_test <- mnist$test$x
+y_test <- mnist$test$y
+```
+
+

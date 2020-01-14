@@ -1,0 +1,42 @@
+---
+title: "Distributions"
+author: "Jai Jeffryes"
+date: "12/18/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+What proportion of the t-distribution with 18 degrees of freedom falls below -2.10?
+
+```{r}
+# distribution function.
+pt(q = -2.10, df = 18)
+```
+
+Above 1.65. The area under the curve is where everything is possible. Its total is 1. You can solve it algebraically.
+
+```{r}
+1 - pt(q = 1.65, df = 20)
+```
+
+More than 3 units from the mean, above or below.
+
+```{r}
+2 * pt(q = -3.0, df = 2)
+```
+
+Above -1.79.
+
+```{r}
+1 - pt(-1.79, 19)
+```
+
+Find the t* cut off that corresponds to a confidence interval of interest. If we're going for a 95% confidence interval, the tails are .025 on each side.
+
+```{r}
+qt(0.025, 18)
+```
+

@@ -1,0 +1,176 @@
+---
+title: "LM Diagnostics"
+author: "Jai Jeffryes"
+date: "12/28/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+This should be an ISLR analysis per chapter 2.
+
+## Why linear regression
+Linear regression is particularly useful for inferential questions because it is easy to interpret. You can just read off the coefficients to make meaningful observations about data generation. Let's examine data about an internet favorite, cats, from the `MASS` package.
+
+Citation: Venables WN, Ripley BD (2002). Modern Applied Statistics with S, Fourth edition. Springer, New York. ISBN 0-387-95457-0, [http://www.stats.ox.ac.uk/pub/MASS4](http://www.stats.ox.ac.uk/pub/MASS4).
+
+## Modeling cats
+
+```{r}
+library(MASS)
+data(cats)
+set.seed(42)
+lm.fit <- lm(Hwt ~ Bwt, data = cats)
+plot(cats$Bwt, cats$Hwt)
+abline(lm.fit)
+lm.coef <- coef(lm.fit)
+lm.coef
+```
+We regressed heart weight in grams on body weight in kilograms. The linearity of the relationship appears reasonable enough from eyeballing the plot. What can we say about it? The coefficients are: `r lm.coef`. Therefore, the formula for predicting heart weight goes like this.
+
+$heart\_weight = `r lm.coef[1]` + `r lm.coef[2]` \times body\_weight$
+
+We can state a conclusion just by reading off the second coefficient. An adult cat's body weight has a positive relationship to its heart weight. A 1-kilogram increase in body weight leads, on average, to a 4-gram increase in heart weight.
+
+This conclusion could use more context, and we could also qualify it by digging into the linear model.
+
+```{r}
+confint(lm.fit)
+summary(lm.fit)
+hwt_mean <- mean(cats$Hwt)
+lm.se <- sigma(lm.fit)
+hwt_mean
+lm.se
+```
+
+The first coefficient, `r lm.coef[1]`, is the $y$ intercept and would represent the heart weight of a cat with no body weight. This region of the linear model is, therefore, meaningless. In the domain of a cat with a reasonable body weight, and considering the confidence interval for the body weight coefficient, we are 95% confident that a 1-kilogram increase in an observed adult cat's body weight corresponds to an increase in heart weight of between 3.5 and 4.5 grams.
+
+The residual standard error is the average amount by which a prediction differs from the true value of the response variable, in this case, `r lm.se`. Since the mean heart weight is `r hwt_mean`, our predictions will be off, on average, by `r (lm.se / hwt_mean) * 100`%.
+
+We can say a lot on the basis of this regression model. Let's add another predictor, the sex of the cat, and perform multiple linear regression.
+
+```{r}
+set.seed(42)
+lm.fit <- lm(Hwt ~ Bwt + Sex, data = cats)
+lm.coef <- coef(lm.fit)
+lm.coef
+
+confint(lm.fit)
+summary(lm.fit)
+hwt_mean <- mean(cats$Hwt)
+lm.se <- sigma(lm.fit)
+hwt_mean
+lm.se
+```
+
+We again disregard the intercept, which represents the meaningless case of a weightless cat. For an adult cat of reasonable body weight and for a given sex, we are 95% confident that a 1-kilogram increase in observed body weight corresponds to an increase in heart weight of between 3.5 and 4.7 grams.
+
+For a given body weight, the dummy variable `SexM`, suggests that a male cat's heart weighs 0.08 grams less than a female's. The dummy variable for a female cat is excluded from the summary because R baselines its value at 0. The p-value for `SexM` is high, at 0.79, and its confidence interval includes 0, so this predictor is insignificant.
+
+Incidentally, although the predictor for sex is insignificant, is it surprising that the model calculated a lower heart weight for a male cat at a given body weight? Let's explore that in plots.
+
+```{r}
+boxplot(Bwt ~ Sex, data = cats)
+
+plot(cats[cats$Sex == "M", "Bwt"], cats[cats$Sex == "M", "Hwt"], col = "blue")
+points(cats[cats$Sex == "F", "Bwt"], cats[cats$Sex == "F", "Hwt"], col = "red")
+abline(lm.fit, col = "black", lw = 1)
+# abline(lm(Hwt ~ Bwt, data = subset(cats, Sex == "M")), col = "blue", lty = 1)
+# abline(lm(Hwt ~ Bwt, data = subset(cats, Sex == "F")), col = "red", lty = 1)
+abline(h = mean(cats[cats$Sex == "M", "Hwt"]), col = "blue", lty = 2)
+abline(h = mean(cats[cats$Sex == "F", "Hwt"]), col = "red", lty = 2)
+
+hwt_pred <- predict(lm.fit, data.frame(Bwt = c(3, 3), Sex = c("M", "F")))
+hwt_pred
+```
+
+The boxplot shows the distribution of body weight by sex. Male cats weigh more on average. In the scatterplot, the dashed lines show these averages, too, the blue line depicting the average body weight for males, the red one for females. We see a relationship between predictors, sex and body weight. Though a male cat's heart weighs less than a female's for a given body weight, on average the body weight of a male cat is higher.
+
+For example, we run a prediction for heart weight given a body weight of 3 kilograms for each sex.
+
+- Male: `r hwt_pred[1]` g.
+- Female: `r hwt_pred[2]` g.
+
+Although we consider sex insignificant in this model, the exploration gives us some context for talking about the assumptions needed for linear regression.
+
+## Assumptions
+Relying on linear regression requires two assumptions.
+
+1. Additive. The effect of a change in a predictor on the response is independent of the values of the other predictors.
+1. Linear. The change in response due to a one-unit change in a predictor is constant, regardless of the value of the predictor.
+
+```{r}
+set.seed(42)
+lm.fit <- lm(Hwt ~ Sex * Bwt, data = cats)
+lm.coef <- coef(lm.fit)
+lm.coef
+
+confint(lm.fit)
+summary(lm.fit)
+hwt_mean <- mean(cats$Hwt)
+lm.se <- sigma(lm.fit)
+hwt_mean
+lm.se
+```
+
+## To do
+- Multiple linear regression.
+- Colinearity between cat sex and body weight. `car::vif(lm.fit)`
+- Transform a predictor so linear regression may be used.
+- Remove the additive assumption. Introduce an interaction variable.
+
+## Simulate a linear function
+```{r}
+# Simulate a linear function.
+b.0 <- 0.5
+b.1 <- 2
+
+set.seed(20)
+x <- rnorm(100)
+e <- rnorm(100, 0, 2)
+y <- b.0 + b.1 * x + e
+
+dataset <- as.data.frame(cbind(x, y))
+summary(dataset$y)
+
+lm.fit <- lm(y ~ x, data = dataset)
+plot(dataset$x, dataset$y)
+abline(lm.fit)
+par(mfrow = c(2,2))
+plot(lm.fit)
+
+lm.fit3 <- lm(y ~ poly(x, 3), data = dataset)
+par(mfrow = c(2,2))
+plot(lm.fit3)
+
+rss <- sum(residuals(lm.fit)^2)
+rss3 <- sum(residuals(lm.fit3)^2)
+
+
+```
+
+## Removing the additive assumption
+
+```{r}
+# Simulate a linear function.
+b.0 <- 0.5
+b.1 <- 2
+b.2 <- 1.1
+
+set.seed(20)
+x <- rnorm(100)
+y <- rnorm(100)
+e <- rnorm(100, 0, 2)
+z <- b.0 + b.1 * x + b.2 * y + e
+
+dataset <- as.data.frame(cbind(x, y, z))
+summary(dataset$z)
+
+lm.fit <- lm(z ~ ., data = dataset)
+par(mfrow = c(2,2))
+plot(lm.fit)
+```
+
